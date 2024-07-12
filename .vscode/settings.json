@@ -1,0 +1,19 @@
+{
+    "cmake.configureOnOpen": true,
+    "files.associations": {
+        "array": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "regex": "cpp",
+        "*.tcc": "cpp",
+        "memory": "cpp",
+        "random": "cpp"
+    },
+    "cmake.sourceDirectory": "C:/D Files/Project/Automation/ESP/Temperature28/.pio/libdeps/esp32dev/ArduinoJson",
+    "cmake.ignoreCMakeListsMissing": true
+}
