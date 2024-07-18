@@ -12,7 +12,15 @@
         "regex": "cpp",
         "*.tcc": "cpp",
         "memory": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "optional": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "system_error": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
     },
     "cmake.sourceDirectory": "C:/D Files/Project/Automation/ESP/Temperature28/.pio/libdeps/esp32dev/ArduinoJson",
     "cmake.ignoreCMakeListsMissing": true

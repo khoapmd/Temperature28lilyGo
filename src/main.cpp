@@ -12,11 +12,11 @@ using namespace std;
 #include <OTAHelper.h>
 #include <esp_task_wdt.h>
 
-#define WDT_TIMEOUT 300 //5 minutes
+#define WDT_TIMEOUT 300 // 5 minutes
 
 // top connector
-//#define SDAPIN 16 // changes for lilyGo board
-//#define SCLPIN 15 // changes for lilyGo board
+// #define SDAPIN 16 // changes for lilyGo board
+// #define SCLPIN 15 // changes for lilyGo board
 #define SHT35_ADDRESS 0x44
 SHT30 sht;
 
@@ -48,11 +48,15 @@ bool isConnected = false;
 bool bGotDeviceName = false;
 int disconnectionTime = 0;
 
+float normalized_temp = 0;
+float normalized_humidity = 0;
+float average_normalized_value = 0;
+float average_number = 0;
+
 // Prototypes
 void getData();
 void connectWIFI();
 void disconnectWifi(); // for testing
-void sendDataMQTT(float temp, float hum);
 void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
 void checkFirmware();
@@ -104,24 +108,14 @@ void setup()
   WiFi.onEvent(WiFiStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
   // Serial.println(cConf.WIFIpassword + " - " + cConf.MQTTPassword) ;
-
-  connectWIFI();
+  startWatchDog();
+  setup_wifi();
+  setup_mqtt();
   delay(10);
   tickerGetData.start(); // start the ticker.
   tickerFirmware.start();
-  // tickerDisconnect.start();
-  // tickerRestart.start();
-  
-  // bGotDeviceName = cConf.getDeviceID();
-
-  // if (bGotDeviceName) {
-  //   String myDevName = cConf.DeviceName;
-  //   strcat(vIDChar, myDevName.c_str());
-  // }
-
   getData();
-
-  startWatchDog();
+  checkFirmware();
   delay(100);
 }
 
@@ -129,58 +123,26 @@ void loop()
 {
   screenRefresh();
 
-  delay(5);
+  mqttLoop();
 
-  isConnected = WiFi.isConnected() && WiFi.localIP().toString() != "0.0.0.0";
-
-  // check version (only once)
-  if (isConnected)
+  if (!bGotDeviceName)
   {
-    // didn't check the new version yet!!
-    if (!newVersionChecked)
-    {
-      checkFirmware();
-      newVersionChecked = true;
-    }
+    bGotDeviceName = cConf.getDeviceID();
 
-    if (!bGotDeviceName) {
-      bGotDeviceName = cConf.getDeviceID();
-
-      if (bGotDeviceName) {
-        String myDevName = cConf.DeviceName;
-        strcat(vIDChar, myDevName.c_str());
-      }
-    }
-      
-    // Didn't get extended information yet
-    if (!alreadyGotExtInfo)
+    if (bGotDeviceName)
     {
-       alreadyGotExtInfo = cConf.getExtraInfo();
+      String myDevName = cConf.DeviceName;
+      strcat(vIDChar, myDevName.c_str());
     }
-
-    // MQTT not connected!!!
-    if (!mqttIsConnected())
-    {
-      mqttCheckConnectivity();
-    }
-  } else {
-    vTaskDelay(2500 / portTICK_PERIOD_MS);
   }
 
-  // tells WatchDog that it is alive! Only with network. If more than 5 minutes without it, also force restart!
-   esp_task_wdt_reset();
-
-  // Reconnect wifi - checking only connected flag....
-  if (WiFi.status() != WL_CONNECTED)
+  // Didn't get extended information yet
+  if (!alreadyGotExtInfo)
   {
-    connectWIFI();
-    delay(100);
+    alreadyGotExtInfo = cConf.getExtraInfo();
   }
 
   tickerGetData.update();
-
-  mqttLoop();
-
   tickerFirmware.update();
 }
 
@@ -197,7 +159,6 @@ void getData()
   float humOrg = (sht.getHumidity() * cConf.hSlope) + cConf.hIntercept;
   float tempOrg = (sht.getTemperature() * cConf.tSlope) + cConf.tIntercept;
 
-
   if (humOrg < 0)
     humOrg = 0;
   if (tempOrg < 0)
@@ -210,17 +171,29 @@ void getData()
 
   sprintf(vHumChar, "%3.1f %%", vHum);
 
-  // sendData = (vTemp >= vTempOld + TempVarition || vTemp <= vTempOld - TempVarition) || (vHum >= vHumOld + HumVarition || vHum <= vHumOld - HumVarition);
-
   setDataDisplay(vTempChar, vHumChar, vIDChar);
-  //Serial.print("Temperature to Show:");
-  //Serial.println(vTempChar);
+  // Serial.print("Temperature to Show:");
+  // Serial.println(vTempChar);
 
   // send every 5 minutes;
 
-  if (dataCollectCount > 300)
+  if (dataCollectCount > 30)
   {
-    sendDataMQTT(vTemp, vHum);
+    normalized_temp = (vTemp - cConf.tlow) / (cConf.thigh - cConf.tlow);
+    normalized_humidity = (vHum - cConf.hlow) / (cConf.hhigh - cConf.hlow);
+    average_normalized_value = (normalized_temp + normalized_humidity) / 2;
+    average_number = average_normalized_value * 100;
+    Serial.println("----------------------");
+    Serial.println(cConf.tlow);
+    Serial.println(cConf.thigh);
+    Serial.println(cConf.hlow);
+    Serial.println(cConf.hhigh);
+    Serial.println(cConf.tSlope);
+    Serial.println(cConf.hSlope);
+    Serial.println(cConf.tIntercept);
+    Serial.println(cConf.hIntercept);
+    Serial.println("----------------------");
+    sendDataMQTT(vTemp, vHum, average_number);
     vTempOld = vTemp;
     vHumOld = vHum;
     dataCollectCount = 0;
@@ -236,31 +209,16 @@ void disconnectWifi()
   // mqttDisconnect();
 }
 
-void connectWIFI()
+void printWifiInfo()
 {
-  // WiFi.disconnect();
-  WiFi.mode(WIFI_STA);
-
-  // WiFi.begin("ESP32_Test", "ESP32@ttigroup");
-  WiFi.begin(cConf.WIFIssid, cConf.WIFIpassword);
-  Serial.println("\nConnecting ");
-  delay(100);
-
-  for (int i = 0; i < 10; i++)
-  {
-    if (WiFi.status() != WL_CONNECTED)
-    {
-      Serial.print(".");
-      delay(150);
-    }
-    else
-    {
-      Serial.println(WiFi.localIP().toString());
-      break;
-    }
-  }
-
-  delay(100);
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.print("Connected Network Signal Strength (RSSI): ");
+  Serial.println(WiFi.RSSI()); /*Print WiFi signal strength*/
+  Serial.print("Gateway: ");
+  Serial.println(WiFi.gatewayIP());
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info)
@@ -300,9 +258,8 @@ void startWatchDog()
 {
   // WatchDog
   Serial.println("Start WatchDog");
-  esp_task_wdt_init(WDT_TIMEOUT, true); //enable panic so ESP32 restarts
-  esp_task_wdt_add(NULL); //add current thread to WDT watch
-  
+  esp_task_wdt_init(WDT_TIMEOUT, true); // enable panic so ESP32 restarts
+  esp_task_wdt_add(NULL);               // add current thread to WDT watch
 }
 
 void stopWatchDog()
@@ -310,4 +267,4 @@ void stopWatchDog()
   Serial.println("Stopping WatchDog");
   esp_task_wdt_delete(NULL);
   esp_task_wdt_deinit();
-  }
+}

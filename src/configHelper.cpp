@@ -1,6 +1,5 @@
 #include "configHelper.h"
 #include <SD.h>
-#include <ArduinoJson.h>
 #include "Cipher.h"
 #include "SPI.h"
 #include <HTTPClient.h>
@@ -26,18 +25,6 @@ bool needToUpdate = false;
 
 void printLocalTime();
 
-void assignIfDifferent(String &memberVar, const JsonDocument &doc, const char *key)
-{
-  if (doc.containsKey(key))
-  {
-    String newValue = doc[key].as<String>();
-    if (memberVar != newValue)
-    {
-      memberVar = newValue;
-      needToUpdate = true;
-    }
-  }
-}
 
 bool configObj::isConfigAvailable()
 {
@@ -418,33 +405,15 @@ bool configObj::getExtraInfo()
     }
 
     preferences.begin("fData", false);
+    // Update slopes and intercepts
+    updatePreferencesIfDifferent("hSlope", "hIntercept", this->hSlope, this->hIntercept, doc);
+    updatePreferencesIfDifferent("tSlope", "tIntercept", this->tSlope, this->tIntercept, doc);
 
-    // only treat if different
-    if (doc.containsKey("hSlope"))
-    {
-      if (doc["hSlope"].as<double>() != this->hSlope || doc["hIntercept"].as<double>() != this->hIntercept)
-      {
-        this->hSlope = doc["hSlope"].as<double>();
-        this->hIntercept = doc["hIntercept"].as<double>();
-        // save for the future
-        preferences.putDouble("hSlope", this->hSlope);
-        preferences.putDouble("hIntercept", this->hIntercept);
-      }
-    }
+    // Update temperature values
+    updateTemperatureOrHumidity("Tem", "tlow", "thigh", this->tlow, this->thigh, doc);
 
-    if (doc.containsKey("tSlope"))
-    {
-      // only treat if different
-      if (doc["tSlope"].as<double>() != this->tSlope || doc["tIntercept"].as<double>() != this->hIntercept)
-      {
-
-        this->tSlope = doc["tSlope"].as<double>();
-        this->tIntercept = doc["tIntercept"].as<double>();
-        // save for the future
-        preferences.putDouble("tSlope", this->tSlope);
-        preferences.putDouble("tIntercept", this->tIntercept);
-      }
-    }
+    // Update humidity values
+    updateTemperatureOrHumidity("Hum", "hlow", "hhigh", this->hlow, this->hhigh, doc);
     preferences.end();
   }
   else
@@ -456,4 +425,61 @@ bool configObj::getExtraInfo()
   client.end();
 
   return true;
+}
+
+void assignIfDifferent(String &memberVar, const JsonDocument &doc, const char *key)
+{
+  if (doc.containsKey(key))
+  {
+    String newValue = doc[key].as<String>();
+    if (memberVar != newValue)
+    {
+      memberVar = newValue;
+      needToUpdate = true;
+    }
+  }
+}
+
+void updatePreferencesIfDifferent(const char* slopeKey, const char* interceptKey, double& currentSlope, double& currentIntercept, const JsonDocument& doc)
+{
+    if (doc.containsKey(slopeKey))
+    {
+        double newSlope = doc[slopeKey].as<double>();
+        double newIntercept = doc[interceptKey].as<double>();
+
+        if (newSlope != currentSlope || newIntercept != currentIntercept)
+        {
+            currentSlope = newSlope;
+            currentIntercept = newIntercept;
+
+            preferences.putDouble(slopeKey, currentSlope);
+            preferences.putDouble(interceptKey, currentIntercept);
+        }
+    }
+}
+
+void updateTemperatureOrHumidity(const char* docKey, const char* lowKey, const char* highKey, double& currentLow, double& currentHigh, const JsonDocument& doc)
+{
+    if (doc.containsKey(docKey))
+    {
+        String input = doc[docKey].as<String>();
+        int hyphenIndex = input.indexOf('-');
+        if (hyphenIndex != -1)
+        {
+            String firstPart = input.substring(0, hyphenIndex);
+            String secondPart = input.substring(hyphenIndex + 1);
+
+            double lowValue = firstPart.toDouble();
+            double highValue = secondPart.toDouble();
+
+            if (lowValue != currentLow || highValue != currentHigh)
+            {
+                currentLow = lowValue;
+                currentHigh = highValue;
+
+                preferences.putDouble(lowKey, currentLow);
+                preferences.putDouble(highKey, currentHigh);
+            }
+        }
+    }
 }

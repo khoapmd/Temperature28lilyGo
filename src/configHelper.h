@@ -4,6 +4,11 @@
 #define CONFIG_HELPER_H
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
+
+void assignIfDifferent(String &memberVar, const JsonDocument &doc, const char *key);
+void updatePreferencesIfDifferent(const char* slopeKey, const char* interceptKey, double& currentSlope, double& currentIntercept, const JsonDocument& doc);
+void updateTemperatureOrHumidity(const char* docKey, const char* lowKey, const char* highKey, double& currentLow, double& currentHigh, const JsonDocument& doc);
 
 class configObj {       // The class
 
@@ -32,6 +37,10 @@ class configObj {       // The class
     double hIntercept = 0;
     double tSlope = 0;
     double tIntercept = 0;
+    double tlow = 0;
+    double thigh = 0;
+    double hlow = 0;
+    double hhigh = 0;
     String ntpServer = "CNSDC01.cn.globaltti.net";
     long  gmtOffset_sec = 28800; // 8 Hours, Shanghai
     int   daylightOffset_sec = 0;

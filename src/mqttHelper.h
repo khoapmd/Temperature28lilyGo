@@ -9,12 +9,12 @@
 #include "configHelper.h"
 
 
-void sendDataMQTT(float temp, float hum);
-void mqttInit();
-void mqttConnect();
-void mqttCheckConnectivity();
+void sendDataMQTT(float temp, float hum, float normal);
+void setup_mqtt();
+void reconnect();
+void setup_wifi();
 void mqttLoop();
-void mqttDisconnect();
-bool mqttIsConnected();
+void setWill();
+void sendConnectionAck();
 
 #endif 
