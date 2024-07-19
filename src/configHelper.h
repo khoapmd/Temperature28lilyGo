@@ -9,6 +9,7 @@
 void assignIfDifferent(String &memberVar, const JsonDocument &doc, const char *key);
 void updatePreferencesIfDifferent(const char* slopeKey, const char* interceptKey, double& currentSlope, double& currentIntercept, const JsonDocument& doc);
 void updateTemperatureOrHumidity(const char* docKey, const char* lowKey, const char* highKey, double& currentLow, double& currentHigh, const JsonDocument& doc);
+void updateFirmver();
 
 class configObj {       // The class
 
@@ -48,7 +49,8 @@ class configObj {       // The class
     bool isConfigAvailable();
     bool LoadConfiguration();
     bool SaveConfiguration();
-    bool getDeviceID();
+    bool checkDeviceExist();
+    bool signInfo(String sensor_id);
     bool getExtraInfo();
     void getNTP();
     void sd_config();

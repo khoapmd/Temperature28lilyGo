@@ -127,7 +127,7 @@ void loop()
 
   if (!bGotDeviceName)
   {
-    bGotDeviceName = cConf.getDeviceID();
+    bGotDeviceName = cConf.checkDeviceExist();
 
     if (bGotDeviceName)
     {

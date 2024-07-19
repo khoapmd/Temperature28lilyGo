@@ -25,7 +25,6 @@ bool needToUpdate = false;
 
 void printLocalTime();
 
-
 bool configObj::isConfigAvailable()
 {
   // SD_MMC.begin(SD_CS);
@@ -49,7 +48,7 @@ bool configObj::LoadConfiguration()
   // File file = SD.open(configFile); // comment out for lilyGo board
   File file = SD_MMC.open(configFile, "r"); // add for lilyGo board
 
-  StaticJsonDocument<1024> doc;
+  JsonDocument doc;
   DeserializationError error = deserializeJson(doc, file);
   file.close();
   configObj::sd_close();
@@ -119,7 +118,7 @@ bool configObj::LoadConfiguration()
 
 bool configObj::SaveConfiguration()
 {
-  StaticJsonDocument<1024> doc;
+  JsonDocument doc;
 
   doc["wifi_ssid"] = this->WIFIssid;
   doc["wifi_pwd"] = this->WIFIpasswordToUpdate;
@@ -241,7 +240,7 @@ bool configObj::getLogo()
   size_t _totalLength;
   size_t _currentLength = 0; //
 
-  String queryURL = "http://cnshadoop01.cn.globaltti.net:8088/getEspFiles?key=XXV7lnIse9q4YGA11pXA&filePrefix=" + String(APPUPDNAME);
+  String queryURL = String(APPAPI) + "/getEspFiles?key=" + String(APPAPIKEY) + "&filePrefix=" + String(APPUPDNAME);
   HTTPClient client;
   client.begin(netConfig, queryURL.c_str());
   int httpResponseCode = client.GET();
@@ -294,41 +293,47 @@ bool configObj::getLogo()
   return bRet;
 }
 
-bool configObj::getDeviceID()
+bool configObj::checkDeviceExist()
 {
   HTTPClient client;
 
-  StaticJsonDocument<96> doc;
+  JsonDocument doc;
 
-  String queryURL = String(APPAPI) + "/checkexist?key=" + String(APPAPIKEY) + "&code=" + String(boardID) + "&devicetype=" + APPDEVTYPE;
+  String queryURL = String(APPAPI) + "/checkexist?key=" + String(APPAPIKEY) + "&u_id=" + String(boardID) + "&device_type=" + APPDEVTYPE;
 
-  Serial.println("Will connect " + queryURL);
+  Serial.println("Check Exist " + queryURL);
 
   client.begin(netConfig, queryURL.c_str());
 
   int httpResponseCode = client.GET();
-
-  if (httpResponseCode > 0)
+  String payload = client.getString();
+  Serial.println("Response " + payload);
+  DeserializationError error = deserializeJson(doc, payload);
+  if (error)
   {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    String payload = client.getString();
-
-    Serial.println("Response " + payload);
-
-    DeserializationError error = deserializeJson(doc, payload);
-
-    if (error)
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    client.end();
+    return false;
+  }
+  if (httpResponseCode == 200) // code no content => info not exist
+  {
+    String sensor_id = doc["sensor_id"].as<String>();
+    if (doc["exist"].as<String>() == "N")
     {
-      Serial.print(F("deserializeJson() failed: "));
-      Serial.println(error.f_str());
-      client.end();
-      return false;
+      Serial.println("code no content => info not exist");
+      signInfo(sensor_id);
     }
-
-    if (this->DeviceName != doc["deviceName"].as<String>())
+    else
     {
-      this->DeviceName = doc["deviceName"].as<String>();
+      if (String(APPVERSION) != doc["firm_ver"])
+      {
+        updateFirmver();
+      }
+    }
+    if (this->DeviceName != sensor_id)
+    {
+      this->DeviceName = sensor_id;
       this->SaveConfiguration();
     }
   }
@@ -337,12 +342,45 @@ bool configObj::getDeviceID()
     client.end();
     return false;
   }
-
+  // configObj::getLogo();
   client.end();
-
-  configObj::getLogo();
-
   return true;
+}
+
+bool configObj::signInfo(String sensor_id)
+{
+  HTTPClient http;
+  String queryURL = String(APPAPI) + "/data?key=" + String(APPAPIKEY);
+  Serial.println("Sign " + queryURL);
+  Serial.println("Sensor_id " + sensor_id);
+  http.begin(queryURL);
+  http.addHeader("Content-Type", "application/json");
+  JsonDocument doc;
+
+  doc["u_id"] = String(boardID);
+  doc["device_type"] = String(APPDEVTYPE);
+  doc["sensor_id"] = sensor_id;
+  doc["firm_ver"] = String(APPVERSION);
+
+  String httpRequestData;
+  serializeJson(doc, httpRequestData);
+  int httpResponseCode = http.POST(httpRequestData);
+
+  if (httpResponseCode > 0)
+  {
+    String response = http.getString();
+    Serial.println(httpResponseCode);
+    Serial.println(response);
+    return true;
+  }
+  else
+  {
+    Serial.print("Error on sending POST: ");
+    Serial.println(httpResponseCode);
+    return false;
+  }
+
+  http.end();
 }
 
 void configObj::getNTP()
@@ -366,11 +404,11 @@ bool configObj::getExtraInfo()
 {
   HTTPClient client;
 
-  StaticJsonDocument<1024> doc;
+  JsonDocument doc;
 
-  String queryURL = String(APPAPI) + "/getExtInfo?key=" + String(APPAPIKEY) + "&code=" + String(boardID);
+  String queryURL = String(APPAPI) + "/data?key=" + String(APPAPIKEY) + "&u_id=" + String(boardID);
 
-  Serial.println("Will connect " + queryURL);
+  Serial.println("Get Data " + queryURL);
 
   client.begin(netConfig, queryURL.c_str());
 
@@ -398,7 +436,7 @@ bool configObj::getExtraInfo()
     assignIfDifferent(this->Room, doc, "room");
     assignIfDifferent(this->LineNo, doc, "line");
     assignIfDifferent(this->DisplayName, doc, "display_name");
-    
+
     if (needToUpdate)
     {
       configObj::SaveConfiguration();
@@ -410,10 +448,10 @@ bool configObj::getExtraInfo()
     updatePreferencesIfDifferent("tSlope", "tIntercept", this->tSlope, this->tIntercept, doc);
 
     // Update temperature values
-    updateTemperatureOrHumidity("Tem", "tlow", "thigh", this->tlow, this->thigh, doc);
+    updateTemperatureOrHumidity("temp_limit", "tlow", "thigh", this->tlow, this->thigh, doc);
 
     // Update humidity values
-    updateTemperatureOrHumidity("Hum", "hlow", "hhigh", this->hlow, this->hhigh, doc);
+    updateTemperatureOrHumidity("humi_limit", "hlow", "hhigh", this->hlow, this->hhigh, doc);
     preferences.end();
   }
   else
@@ -440,46 +478,75 @@ void assignIfDifferent(String &memberVar, const JsonDocument &doc, const char *k
   }
 }
 
-void updatePreferencesIfDifferent(const char* slopeKey, const char* interceptKey, double& currentSlope, double& currentIntercept, const JsonDocument& doc)
+void updatePreferencesIfDifferent(const char *slopeKey, const char *interceptKey, double &currentSlope, double &currentIntercept, const JsonDocument &doc)
 {
-    if (doc.containsKey(slopeKey))
+  if (doc.containsKey(slopeKey))
+  {
+    double newSlope = doc[slopeKey].as<double>();
+    double newIntercept = doc[interceptKey].as<double>();
+
+    if (newSlope != currentSlope || newIntercept != currentIntercept)
     {
-        double newSlope = doc[slopeKey].as<double>();
-        double newIntercept = doc[interceptKey].as<double>();
+      currentSlope = newSlope;
+      currentIntercept = newIntercept;
 
-        if (newSlope != currentSlope || newIntercept != currentIntercept)
-        {
-            currentSlope = newSlope;
-            currentIntercept = newIntercept;
-
-            preferences.putDouble(slopeKey, currentSlope);
-            preferences.putDouble(interceptKey, currentIntercept);
-        }
+      preferences.putDouble(slopeKey, currentSlope);
+      preferences.putDouble(interceptKey, currentIntercept);
     }
+  }
 }
 
-void updateTemperatureOrHumidity(const char* docKey, const char* lowKey, const char* highKey, double& currentLow, double& currentHigh, const JsonDocument& doc)
+void updateTemperatureOrHumidity(const char *docKey, const char *lowKey, const char *highKey, double &currentLow, double &currentHigh, const JsonDocument &doc)
 {
-    if (doc.containsKey(docKey))
+  if (doc.containsKey(docKey))
+  {
+    String input = doc[docKey].as<String>();
+    int hyphenIndex = input.indexOf('-');
+    if (hyphenIndex != -1)
     {
-        String input = doc[docKey].as<String>();
-        int hyphenIndex = input.indexOf('-');
-        if (hyphenIndex != -1)
-        {
-            String firstPart = input.substring(0, hyphenIndex);
-            String secondPart = input.substring(hyphenIndex + 1);
+      String firstPart = input.substring(0, hyphenIndex);
+      String secondPart = input.substring(hyphenIndex + 1);
 
-            double lowValue = firstPart.toDouble();
-            double highValue = secondPart.toDouble();
+      double lowValue = firstPart.toDouble();
+      double highValue = secondPart.toDouble();
 
-            if (lowValue != currentLow || highValue != currentHigh)
-            {
-                currentLow = lowValue;
-                currentHigh = highValue;
+      if (lowValue != currentLow || highValue != currentHigh)
+      {
+        currentLow = lowValue;
+        currentHigh = highValue;
 
-                preferences.putDouble(lowKey, currentLow);
-                preferences.putDouble(highKey, currentHigh);
-            }
-        }
+        preferences.putDouble(lowKey, currentLow);
+        preferences.putDouble(highKey, currentHigh);
+      }
     }
+  }
+}
+
+void updateFirmver()
+{
+  HTTPClient http;
+  String queryURL = String(APPAPI) + "/firmware?key=" + String(APPAPIKEY) + "&u_id=" + String(boardID);
+  http.begin(queryURL);
+  http.addHeader("Content-Type", "application/json");
+  JsonDocument doc;
+  doc["firm_ver"] = String(APPVERSION);
+
+  String httpRequestData;
+  serializeJson(doc, httpRequestData);
+  Serial.print(httpRequestData);
+  int httpResponseCode = http.PUT(httpRequestData);
+
+  if (httpResponseCode > 0)
+  {
+    String response = http.getString();
+    Serial.println(httpResponseCode);
+    Serial.println(response);
+  }
+  else
+  {
+    Serial.print("Error on sending PUT: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
 }

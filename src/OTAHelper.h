@@ -1,11 +1,6 @@
-#pragma once
-
-#ifndef OTA_HELPER_H
-#define OTA_HELPER_H
-
-#include <WiFi.h>
+#include <Arduino.h>
 
 String OTACheck(boolean forceUpdate);
+void updateFirmware(uint8_t *data, size_t len);
 void OTAUpdate();
-
-#endif 
+void updateFirmware(uint8_t *data, size_t len);

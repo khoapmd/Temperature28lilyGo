@@ -53,7 +53,7 @@ bool data_read(touch_calibration_t *data) {
             free(str);
             goto OUT;
         }
-        StaticJsonDocument<1024> doc;
+        JsonDocument doc;
         DeserializationError error = deserializeJson(doc, str);
         if (error) {
             Serial.println(F(WARN_TAG"json parsing error"));
@@ -106,7 +106,7 @@ bool data_write(touch_calibration_t *data) {
     nvs_handle_t data_handle;
     size_t required_size = 0;
     esp_err_t err;
-    StaticJsonDocument<1024> doc;
+    JsonDocument doc;
     char str[1024] = { 0 };
 
     err = nvs_open("touch", NVS_READWRITE, &data_handle);

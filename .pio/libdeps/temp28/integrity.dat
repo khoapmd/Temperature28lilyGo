@@ -1,5 +1,5 @@
-lvgl/lvgl@^8.3.9
-bblanchon/ArduinoJson@^6.21.3
-sstaub/Ticker@^4.4.0
-256dpi/MQTT@^2.5.2
 robtillaart/SHT85@^0.4.1
+256dpi/MQTT@^2.5.2
+bblanchon/ArduinoJson@^7.1.0
+lvgl/lvgl@^8.3.9
+sstaub/Ticker@^4.4.0
