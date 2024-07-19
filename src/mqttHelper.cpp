@@ -113,7 +113,7 @@ void sendConnectionAck()
 void sendDataMQTT(float temp, float hum, float normal)
 {
     char dataToSend[256];
-    sprintf(dataToSend, "{\"boardID\":\"%s\",\"temperature\":%.8f,\"humidity\":%.8f,\"normalized\":%.8f,\"displayName\":\"%s\",\"org\":\"%s\",\"dept\":\"%s\",\"room\":\"%s\",\"line\":\"%s\"}", 
+    sprintf(dataToSend, "{\"sensor_id\":\"%s\",\"temperature\":%.8f,\"humidity\":%.8f,\"normalized\":%.8f,\"displayName\":\"%s\",\"org\":\"%s\",\"dept\":\"%s\",\"room\":\"%s\",\"line\":\"%s\"}", 
         boardID, temp, hum, normal, cConf.DisplayName, cConf.Org, cConf.Dept, cConf.Room, cConf.LineNo);
     Serial.println(dataToSend);
     // client.publish("/HouJieTempControl", dataToSend);
