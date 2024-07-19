@@ -99,7 +99,7 @@ void setWill()
     char dataToSend[72];
     // set will
     snprintf(dataToSend, sizeof(dataToSend), "{\"status\":\"%s\", \"client\": \"%s\", \"appver\": \"%s\"}", "disconnected", boardID, String(APPVERSION));
-    client.setWill(cConf.MQTTTopic.c_str(), dataToSend, true, 2);
+    client.setWill(String(APPPMQTTSTSTOPIC).c_str(), dataToSend, true, 2);
 }
 
 void sendConnectionAck()
@@ -107,7 +107,7 @@ void sendConnectionAck()
     char dataToSend[72];
     // send connection ack
     snprintf(dataToSend, sizeof(dataToSend), "{\"status\":\"%s\", \"client\": \"%s\", \"appver\": \"%s\"}", "connected", boardID, String(APPVERSION));
-    client.publish(cConf.MQTTTopic.c_str(), dataToSend, true, 2);
+    client.publish(String(APPPMQTTSTSTOPIC), dataToSend, true, 2);
     setMQTTIcon(true);
 }
 void sendDataMQTT(float temp, float hum, float normal)
