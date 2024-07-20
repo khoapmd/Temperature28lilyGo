@@ -316,34 +316,31 @@ bool configObj::checkDeviceExist()
     client.end();
     return false;
   }
-  if (httpResponseCode == 200) // code no content => info not exist
+  if (httpResponseCode == 204) // code no content => info not exist
   {
-    String sensor_id = doc["sensor_id"].as<String>();
-    if (doc["exist"].as<String>() == "N")
+    Serial.println("code no content => info not exist");
+    signInfo(this->DeviceName);
+  }
+  else if (httpResponseCode == 200)
+  { // info exist, check firm_ver
+    Serial.println("info exist, check firm_ver");
+    JsonDocument doc;
+    deserializeJson(doc, payload);
+    if (String(APPVERSION) != doc["firm_ver"])
     {
-      Serial.println("code no content => info not exist");
-      signInfo(sensor_id);
-    }
-    else
-    {
-      if (String(APPVERSION) != doc["firm_ver"])
-      {
-        updateFirmver();
-      }
-    }
-    if (this->DeviceName != sensor_id)
-    {
-      this->DeviceName = sensor_id;
-      this->SaveConfiguration();
+      updateFirmver();
     }
   }
   else
   {
-    client.end();
-    return false;
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    String payload = payload;
+    Serial.println("Response " + payload);
   }
-  // configObj::getLogo();
+
   client.end();
+  // configObj::getLogo();
   return true;
 }
 
