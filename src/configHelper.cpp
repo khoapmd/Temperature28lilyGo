@@ -240,8 +240,9 @@ bool configObj::getLogo()
   size_t _totalLength;
   size_t _currentLength = 0; //
 
-  String queryURL = String(APPAPI) + "/getEspFiles?key=" + String(APPAPIKEY) + "&filePrefix=" + String(APPUPDNAME);
+  String queryURL = String(APPAPI) + "/getEspFiles?filePrefix=" + String(APPUPDNAME);
   HTTPClient client;
+  client.addHeader("X-Secret-Key", String(APPAPIKEY));
   client.begin(netConfig, queryURL.c_str());
   int httpResponseCode = client.GET();
 
@@ -298,8 +299,8 @@ bool configObj::checkDeviceExist()
   HTTPClient client;
 
   JsonDocument doc;
-
-  String queryURL = String(APPAPI) + "/checkexist?key=" + String(APPAPIKEY) + "&u_id=" + String(boardID) + "&device_type=" + APPDEVTYPE;
+  client.addHeader("X-Secret-Key", String(APPAPIKEY));
+  String queryURL = String(APPAPI) + "/checkexist?u_id=" + String(boardID) + "&device_type=" + APPDEVTYPE;
 
   Serial.println("Check Exist " + queryURL);
 
@@ -346,12 +347,13 @@ bool configObj::checkDeviceExist()
 
 bool configObj::signInfo(String sensor_id)
 {
-  HTTPClient http;
+  HTTPClient client;
+  client.addHeader("X-Secret-Key", String(APPAPIKEY));
   String queryURL = String(APPAPI) + "/data?key=" + String(APPAPIKEY);
   Serial.println("Sign " + queryURL);
   Serial.println("Sensor_id " + sensor_id);
-  http.begin(queryURL);
-  http.addHeader("Content-Type", "application/json");
+  client.begin(netConfig, queryURL.c_str());
+  client.addHeader("Content-Type", "application/json");
   JsonDocument doc;
 
   doc["u_id"] = String(boardID);
@@ -361,11 +363,11 @@ bool configObj::signInfo(String sensor_id)
 
   String httpRequestData;
   serializeJson(doc, httpRequestData);
-  int httpResponseCode = http.POST(httpRequestData);
+  int httpResponseCode = client.POST(httpRequestData);
 
   if (httpResponseCode > 0)
   {
-    String response = http.getString();
+    String response = client.getString();
     Serial.println(httpResponseCode);
     Serial.println(response);
     return true;
@@ -377,7 +379,7 @@ bool configObj::signInfo(String sensor_id)
     return false;
   }
 
-  http.end();
+  client.end();
 }
 
 void configObj::getNTP()
@@ -402,8 +404,8 @@ bool configObj::getExtraInfo()
   HTTPClient client;
 
   JsonDocument doc;
-
-  String queryURL = String(APPAPI) + "/data?key=" + String(APPAPIKEY) + "&u_id=" + String(boardID);
+  client.addHeader("X-Secret-Key", String(APPAPIKEY));
+  String queryURL = String(APPAPI) + "/data?u_id=" + String(boardID);
 
   Serial.println("Get Data " + queryURL);
 
@@ -521,21 +523,22 @@ void updateTemperatureOrHumidity(const char *docKey, const char *lowKey, const c
 
 void updateFirmver()
 {
-  HTTPClient http;
-  String queryURL = String(APPAPI) + "/firmware?key=" + String(APPAPIKEY) + "&u_id=" + String(boardID);
-  http.begin(queryURL);
-  http.addHeader("Content-Type", "application/json");
+  HTTPClient client;
+  client.addHeader("X-Secret-Key", String(APPAPIKEY));
+  String queryURL = String(APPAPI) + "/firmware?&u_id=" + String(boardID);
+  client.begin(queryURL);
+  client.addHeader("Content-Type", "application/json");
   JsonDocument doc;
   doc["firm_ver"] = String(APPVERSION);
 
   String httpRequestData;
   serializeJson(doc, httpRequestData);
   Serial.print(httpRequestData);
-  int httpResponseCode = http.PUT(httpRequestData);
+  int httpResponseCode = client.PUT(httpRequestData);
 
   if (httpResponseCode > 0)
   {
-    String response = http.getString();
+    String response = client.getString();
     Serial.println(httpResponseCode);
     Serial.println(response);
   }
@@ -545,5 +548,5 @@ void updateFirmver()
     Serial.println(httpResponseCode);
   }
 
-  http.end();
+  client.end();
 }

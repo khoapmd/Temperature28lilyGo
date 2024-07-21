@@ -12,7 +12,7 @@ String vNewVersion = "N";
 int _totalLength;
 int _currentLength = 0; // current size of written firmware
 extern void setUpdatingIcon();
-String _firmwareQuery = String(APPAPI) + "/firmware?key=" + String(APPAPIKEY) + "&filePrefix=" + String(APPUPDNAME) + "&screenSize=" + String(APPSCREENSIZE) + "&version=" + String(APPVERSION);
+String _firmwareQuery = String(APPAPI) + "/firmware?filePrefix=" + String(APPUPDNAME) + "&screenSize=" + String(APPSCREENSIZE) + "&version=" + String(APPVERSION);
 
 String OTACheck(boolean forceUpdate)
 {
@@ -22,6 +22,7 @@ String OTACheck(boolean forceUpdate)
 
   String queryURL = _firmwareQuery + "&update=N";
   Serial.println(queryURL);
+  client.addHeader("X-Secret-Key", String(APPAPIKEY));
   client.begin(netOTA, queryURL.c_str());
 
   int httpResponseCode = client.GET();
@@ -67,8 +68,8 @@ void OTAUpdate()
   String fwVersionURL = _firmwareQuery + "&update=Y";
 
   Serial.println(fwVersionURL);
-
-  client.begin(netOTA, fwVersionURL);
+  client.addHeader("X-Secret-Key", String(APPAPIKEY));
+  client.begin(netOTA, fwVersionURL.c_str());
   // Get file, just to check if each reachable
   int resp = client.GET();
   Serial.print("Response: ");
