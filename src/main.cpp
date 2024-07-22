@@ -55,7 +55,6 @@ float average_number = 0;
 
 // Prototypes
 void getData();
-void connectWIFI();
 void disconnectWifi(); // for testing
 void WiFiStationConnected(WiFiEvent_t event, WiFiEventInfo_t info);
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info);
