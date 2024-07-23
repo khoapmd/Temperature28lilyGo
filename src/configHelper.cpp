@@ -433,7 +433,7 @@ bool configObj::getExtraInfo()
     assignIfDifferent(this->Dept, doc, "dept");
     assignIfDifferent(this->Org, doc, "org");
     assignIfDifferent(this->Room, doc, "room");
-    assignIfDifferent(this->LineNo, doc, "line");
+    assignIfDifferent(this->LineNo, doc, "line_no");
     assignIfDifferent(this->DisplayName, doc, "display_name");
 
     if (needToUpdate)
@@ -526,7 +526,7 @@ void updateFirmver()
   HTTPClient client;
   client.addHeader("X-Secret-Key", String(APPAPIKEY));
   String queryURL = String(APPAPI) + "/firmware?&u_id=" + String(boardID);
-  client.begin(queryURL);
+  client.begin(netConfig, queryURL.c_str());
   client.addHeader("Content-Type", "application/json");
   JsonDocument doc;
   doc["firm_ver"] = String(APPVERSION);

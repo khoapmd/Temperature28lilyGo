@@ -15,7 +15,6 @@ void sendConnectionAck() ;
 
 // from screen.
 extern void setMQTTIcon(boolean bConnected);
-void subscribeToIOTCommands();
 
 void setup_wifi()
 {
@@ -114,7 +113,7 @@ void sendDataMQTT(float temp, float hum, float normal)
 {
     char dataToSend[256];
     sprintf(dataToSend, "{\"sensor_id\":\"%s\",\"temperature\":%.8f,\"humidity\":%.8f,\"normalized\":%.8f,\"displayName\":\"%s\",\"org\":\"%s\",\"dept\":\"%s\",\"room\":\"%s\",\"line\":\"%s\"}", 
-        boardID, temp, hum, normal, cConf.DisplayName, cConf.Org, cConf.Dept, cConf.Room, cConf.LineNo);
+        boardID, temp, hum, normal, cConf.DisplayName.c_str(), cConf.Org.c_str(), cConf.Dept.c_str(), cConf.Room.c_str(), cConf.LineNo.c_str());
     Serial.println(dataToSend);
     // client.publish("/HouJieTempControl", dataToSend);
     client.publish(cConf.MQTTTopic, dataToSend);
