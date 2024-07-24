@@ -27,7 +27,7 @@ void setup_wifi()
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(cConf.WIFIssid, cConf.WIFIpassword);
-    Serial.println(cConf.WIFIpassword + " - " + cConf.MQTTPassword) ;
+
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(500);

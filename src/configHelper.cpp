@@ -58,7 +58,11 @@ bool configObj::LoadConfiguration()
     Serial.println(this->error);
     return false;
   }
+
+  //Print reading here, suspect Cipher has bug with long phrase or some letter.
+  //
   serializeJson(doc, Serial);
+
   this->WIFIssid = doc["wifi_ssid"].as<String>();
   this->WIFIpassword = doc["wifi_pwd"].as<String>();
   this->LineNo = doc["line_no"].as<String>();
