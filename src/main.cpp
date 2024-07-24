@@ -106,7 +106,6 @@ void setup()
   WiFi.onEvent(WiFiStationConnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
   WiFi.onEvent(WiFiStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
-  // Serial.println(cConf.WIFIpassword + " - " + cConf.MQTTPassword) ;
   startWatchDog();
   setup_wifi();
   setup_mqtt();

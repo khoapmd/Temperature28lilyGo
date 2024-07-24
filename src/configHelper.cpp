@@ -45,7 +45,6 @@ bool configObj::LoadConfiguration()
   this->tIntercept = preferences.getDouble("tIntercept", 0);
   preferences.end();
 
-  // File file = SD.open(configFile); // comment out for lilyGo board
   File file = SD_MMC.open(configFile, "r"); // add for lilyGo board
 
   JsonDocument doc;
@@ -59,7 +58,7 @@ bool configObj::LoadConfiguration()
     Serial.println(this->error);
     return false;
   }
-
+  serializeJson(doc, Serial);
   this->WIFIssid = doc["wifi_ssid"].as<String>();
   this->WIFIpassword = doc["wifi_pwd"].as<String>();
   this->LineNo = doc["line_no"].as<String>();
@@ -84,7 +83,6 @@ bool configObj::LoadConfiguration()
 
   if (this->wifiEncoded == "Y")
   {
-    this->WIFIpasswordToUpdate = this->WIFIpassword;
     this->WIFIpassword = cipher->decryptString(this->WIFIpassword, encCode);
   }
   else
@@ -96,7 +94,6 @@ bool configObj::LoadConfiguration()
 
   if (this->MQTTEncoded == "Y")
   {
-    this->MQTTpasswordToUpdate = this->MQTTPassword;
     this->MQTTPassword = cipher->decryptString(this->MQTTPassword, encCode);
   }
   else
@@ -138,16 +135,13 @@ bool configObj::SaveConfiguration()
   doc["DeviceName"] = this->DeviceName;
 
   configObj::sd_config();
-  //    SD.remove(configFile);
-  // First remove the "new" to craete as it.
   if (SD_MMC.exists(configFile + ".new"))
   {
     SD_MMC.remove(configFile + ".new");
   }
 
   File file;
-  // file = SD.open(configFile + ".new", FILE_WRITE); //comment out for lilyGo board
-  file = SD_MMC.open(configFile + ".new", FILE_WRITE); // add for lilyGo board
+  file = SD_MMC.open(configFile + ".new", FILE_WRITE); 
   if (serializeJson(doc, file) == 0)
   {
     Serial.println(F("Failed to write to file"));
@@ -192,14 +186,6 @@ void configObj::sd_config()
     Serial.println("SD init success");
     Serial.printf("➸ Detected SdCard insert: %.2f GB\r\n", SD_MMC.cardSize() / 1024.0 / 1024.0 / 1024.0);
   }
-
-  // if (!SD.begin(SD_CS, SPI))
-  // {
-  //   this->error = "SD.begin failed!";
-
-  //   Serial.println(this->error);
-  //   return;
-  // }
 }
 
 void configObj::sd_close()

@@ -42,7 +42,7 @@ class configObj {       // The class
     double thigh = 0;
     double hlow = 0;
     double hhigh = 0;
-    String ntpServer = "CNSDC01.cn.globaltti.net";
+    String ntpServer = "10.147.37.59";
     long  gmtOffset_sec = 28800; // 8 Hours, Shanghai
     int   daylightOffset_sec = 0;
     int    MQTTPort;
