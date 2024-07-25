@@ -87,6 +87,7 @@ bool configObj::LoadConfiguration()
 
   if (this->wifiEncoded == "Y")
   {
+    this->WIFIpasswordToUpdate = this->WIFIpassword;
     this->WIFIpassword = cipher->decryptString(this->WIFIpassword, encCode);
   }
   else
@@ -98,6 +99,7 @@ bool configObj::LoadConfiguration()
 
   if (this->MQTTEncoded == "Y")
   {
+    this->MQTTpasswordToUpdate = this->MQTTPassword;
     this->MQTTPassword = cipher->decryptString(this->MQTTPassword, encCode);
   }
   else
