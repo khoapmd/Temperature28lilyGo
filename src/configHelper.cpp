@@ -59,7 +59,7 @@ bool configObj::LoadConfiguration()
     return false;
   }
 
-  //Print reading here, suspect Cipher has bug with long phrase or some letter.
+  // Print reading here, suspect Cipher has bug with long phrase or some letter.
   //
   serializeJson(doc, Serial);
 
@@ -145,7 +145,7 @@ bool configObj::SaveConfiguration()
   }
 
   File file;
-  file = SD_MMC.open(configFile + ".new", FILE_WRITE); 
+  file = SD_MMC.open(configFile + ".new", FILE_WRITE);
   if (serializeJson(doc, file) == 0)
   {
     Serial.println(F("Failed to write to file"));
@@ -307,19 +307,22 @@ bool configObj::checkDeviceExist()
     client.end();
     return false;
   }
-  if (httpResponseCode == 204) // code no content => info not exist
-  {
-    Serial.println("code no content => info not exist");
-    signInfo(this->DeviceName);
-  }
-  else if (httpResponseCode == 200)
+  if (httpResponseCode == 200)
   { // info exist, check firm_ver
     Serial.println("info exist, check firm_ver");
     JsonDocument doc;
     deserializeJson(doc, payload);
-    if (String(APPVERSION) != doc["firm_ver"])
+    if (doc["exist"] == "N")
     {
-      updateFirmver();
+      Serial.println("code no content => info not exist");
+      signInfo(doc["device_name"]);
+    }
+    else
+    {
+      if (String(APPVERSION) != doc["firm_ver"])
+      {
+        updateFirmver();
+      }
     }
   }
   else
