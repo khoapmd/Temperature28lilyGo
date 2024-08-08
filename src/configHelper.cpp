@@ -429,6 +429,7 @@ bool configObj::getExtraInfo()
     assignIfDifferent(this->Org, doc, "org");
     assignIfDifferent(this->Room, doc, "room");
     assignIfDifferent(this->LineNo, doc, "line_no");
+    assignIfDifferent(this->DeviceName, doc, "sensor_id");
     assignIfDifferent(this->DisplayName, doc, "display_name");
 
     if (needToUpdate)
