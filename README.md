@@ -93,7 +93,7 @@ Create a `config.json` file on the SD card:
    - Connect to Wi-Fi
    - Read, check and sync with the server then apply configuration
    - Check for OTA updates
-   - Begin publishing data to MQTT broker
+   - Begin publishing and receiving data to MQTT broker
 
 ## Troubleshooting
 
