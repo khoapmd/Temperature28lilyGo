@@ -74,6 +74,7 @@ Create a `config.json` file on the SD card:
    - Clone this repository
    - Open in PlatformIO or Arduino IDE
    - Adjust code for your setup if needed
+   - Update the `build_flags` in `platformio.ini` with your specific configuration details
    - Flash to LilyGo S3 board
 
 3. **Configuration**:
